@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+.turbo/
+
+# Prisma generated client (run `pnpm --filter @aegis/db generate`)
+packages/db/src/generated/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

@@ -1,0 +1,412 @@
+// Aegis data model. Source of truth for application access.
+// Mirrors AEGIS_DATA_MODEL.md section 2 verbatim, except the generator block,
+// which is adapted to the Prisma 7 `prisma-client` generator (the doc predates
+// it and specified the now-legacy `prisma-client-js`). Raw SQL that Prisma
+// cannot express (RLS, partitioning, retention, append-only) lives in
+// prisma/migrations/*/migration.sql — see AEGIS_DATA_MODEL.md sections 3-5.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (for migrate) and is
+// supplied to PrismaClient via a driver adapter at runtime (see src/index.ts).
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Enums ----------
+// Prisma 7 requires one enum value per line.
+
+enum Platform {
+  META
+  GOOGLE
+  TIKTOK
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum SubscriptionTier {
+  FREE
+  SOLO
+  AGENCY
+  SCALE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+enum MonitoringStatus {
+  ACTIVE
+  PAUSED
+  DISCONNECTED
+}
+
+enum TokenType {
+  USER_LONG_LIVED
+  SYSTEM_USER
+}
+
+enum CredentialStatus {
+  ACTIVE
+  EXPIRED
+  INVALID
+  REVOKED
+}
+
+enum RiskCategory {
+  POLICY
+  PAYMENT
+  LINKAGE
+  AUTOMATION
+  VERIFICATION
+  PAGE
+  CIRCUMVENTION
+  STATUS
+}
+
+enum Severity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum RiskBucket {
+  GREEN
+  AMBER
+  RED
+}
+
+enum SnapshotReason {
+  INITIAL
+  CHANGE
+  HEARTBEAT
+  MANUAL_AUDIT
+}
+
+enum AlertState {
+  PENDING
+  SENT
+  FAILED
+  SUPPRESSED
+}
+
+enum AlertChannelType {
+  EMAIL
+  SLACK
+}
+
+// Platform-level role on a login identity, distinct from the per-org Membership
+// role. ADMIN/SALES are internal staff; CUSTOMER is an external advertiser who
+// belongs to an Organization via Membership. Drives the demo persona switcher.
+enum PlatformRole {
+  ADMIN
+  SALES
+  CUSTOMER
+}
+
+// Sales pipeline stage. CONVERTED means the lead became a paying Organization.
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+// ---------- Tenancy and identity ----------
+
+model Organization {
+  id                String   @id @default(cuid())
+  name              String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  memberships       Membership[]
+  connectedAccounts ConnectedAccount[]
+  subscription      Subscription?
+  alertChannels     AlertChannel[]
+  auditLogs         AuditLog[]
+  // null = self-serve / PLG signup; set = converted from a sales Lead.
+  lead              Lead?
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  platformRole PlatformRole @default(CUSTOMER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  memberships  Membership[]
+  ownedLeads   Lead[]       @relation("LeadOwner") // leads owned when platformRole = SALES
+}
+
+// ---------- Sales CRM (coexists with the PLG self-serve motion) ----------
+
+model Lead {
+  id           String     @id @default(cuid())
+  company      String
+  contactName  String?
+  contactEmail String
+  status       LeadStatus @default(NEW)
+  mrr          Float      @default(0) // monthly recurring revenue / deal value, USD
+  tier         SubscriptionTier?
+  notes        String?
+
+  salesRepId   String
+  salesRep     User       @relation("LeadOwner", fields: [salesRepId], references: [id])
+
+  // set when status = CONVERTED; links the lead to the customer tenant it became
+  organizationId String?       @unique
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([salesRepId])
+  @@index([status])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  user      User         @relation(fields: [userId], references: [id])
+  org       Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+// ---------- Monitored accounts and credentials ----------
+
+model ConnectedAccount {
+  id               String   @id @default(cuid())
+  orgId            String
+  platform         Platform
+  externalId       String   // e.g. act_1234567890
+  displayName      String?
+  monitoringStatus MonitoringStatus @default(ACTIVE)
+
+  // denormalized current state (hybrid write strategy: read here, not from snapshots)
+  currentScore     Float?
+  currentBucket    RiskBucket?
+  assessable       Boolean  @default(true)
+  lastSnapshotAt   DateTime?
+  lastAssessableAt DateTime?
+  disabledAt       DateTime? // set when confirmed disabled; drives outcome labeling
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  org              Organization @relation(fields: [orgId], references: [id])
+  credential       Credential?
+  snapshots        HealthSnapshot[]
+  alerts           Alert[]
+
+  @@unique([orgId, platform, externalId])
+  @@index([orgId])
+  @@index([monitoringStatus])
+}
+
+model Credential {
+  id                  String   @id @default(cuid())
+  orgId               String
+  connectedAccountId  String   @unique
+  tokenType           TokenType
+  // envelope encryption fields (see AEGIS_OAUTH_SECURITY.md); never plaintext, never logged
+  ciphertext          Bytes
+  iv                  Bytes
+  authTag             Bytes
+  wrappedDataKey      Bytes
+  keyVersion          Int
+  scopes              String[]
+  status              CredentialStatus @default(ACTIVE)
+  expiresAt           DateTime?
+  dataAccessExpiresAt DateTime?
+  lastValidatedAt     DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  connectedAccount    ConnectedAccount @relation(fields: [connectedAccountId], references: [id])
+
+  @@index([orgId])
+  @@index([status])
+}
+
+// ---------- Time-series health data ----------
+
+model HealthSnapshot {
+  id                 String   @id @default(cuid())
+  orgId              String
+  connectedAccountId String
+  reason             SnapshotReason
+  score              Float
+  bucket             RiskBucket
+  assessable         Boolean
+  modelVersion       String
+  rawPayload         Json     // original platform pull, for replay and v2 retraining
+  isOutcomeLabeled   Boolean  @default(false) // true = protected from archival/downsampling
+  outcomeDisabled    Boolean? // label: did the account get disabled within the window
+  createdAt          DateTime @default(now())
+
+  connectedAccount   ConnectedAccount @relation(fields: [connectedAccountId], references: [id])
+  signals            RiskSignal[]
+
+  @@index([connectedAccountId, createdAt])
+  @@index([orgId])
+  @@index([isOutcomeLabeled])
+}
+
+model RiskSignal {
+  id            String   @id @default(cuid())
+  orgId         String   // carried for clean RLS without a join
+  snapshotId    String
+  definitionId  String   // e.g. meta.payment_failure
+  category      RiskCategory
+  severity      Severity
+  weight        Float
+  confidence    Float
+  contribution  Float    // computed p_s, stored for analysis and v2 features
+  evidence      Json
+  explanation   String
+  remediationId String   // links to the playbook in AEGIS_REMEDIATION_PLAYBOOKS.md
+  createdAt     DateTime @default(now())
+
+  snapshot      HealthSnapshot @relation(fields: [snapshotId], references: [id])
+
+  @@index([snapshotId])
+  @@index([definitionId])
+  @@index([orgId])
+}
+
+// ---------- Alerting ----------
+
+model Alert {
+  id                 String   @id @default(cuid())
+  orgId              String
+  connectedAccountId String
+  severity           Severity
+  bucketFrom         RiskBucket?
+  bucketTo           RiskBucket
+  signalCategories   RiskCategory[]
+  playbookRefs       Json     // [{ remediationId, playbookVersion }]
+  dedupeKey          String   // connectedAccountId + category + day
+  state              AlertState @default(PENDING)
+  sentAt             DateTime?
+  createdAt          DateTime @default(now())
+
+  connectedAccount   ConnectedAccount @relation(fields: [connectedAccountId], references: [id])
+
+  @@unique([connectedAccountId, dedupeKey])
+  @@index([orgId])
+  @@index([state])
+}
+
+model AlertChannel {
+  id                 String   @id @default(cuid())
+  orgId              String
+  connectedAccountId String?  // null = applies org-wide
+  type               AlertChannelType
+  config             Json     // email addresses, or slack workspace + channel
+  enabled            Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  org                Organization @relation(fields: [orgId], references: [id])
+
+  @@index([orgId])
+}
+
+// ---------- Billing ----------
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  orgId                String   @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  tier                 SubscriptionTier @default(FREE)
+  accountQuota         Int      @default(1)
+  seatQuota            Int      @default(1)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  org                  Organization @relation(fields: [orgId], references: [id])
+
+  @@index([stripeCustomerId])
+}
+
+// ---------- Free audit (pre-signup, email-keyed, outside tenant scope) ----------
+
+model AuditResult {
+  id             String   @id @default(cuid())
+  email          String
+  platform       Platform
+  externalId     String?
+  score          Float
+  bucket         RiskBucket
+  assessable     Boolean
+  signals        Json     // one-shot detected signals for the free audit
+  modelVersion   String
+  convertedOrgId String?  // set if this audit later converted to a paid org
+  createdAt      DateTime @default(now())
+
+  @@index([email])
+  @@index([convertedOrgId])
+}
+
+// ---------- De-identified training store (survives customer offboarding) ----------
+// No orgId, no account identifiers, no FK back to any tenant row. Not tenant-scoped.
+// Populated by the de-identification job on offboarding; see AEGIS_DATA_MODEL.md section 5.
+
+model TrainingSample {
+  id              String   @id @default(cuid()) // synthetic, no link to the original snapshot
+  platform        Platform
+  modelVersion    String
+  score           Float
+  bucket          RiskBucket
+  // feature vector: the normalized signals only, no rawPayload, no evidence free-text
+  features        Json     // [{ definitionId, category, severity, weight, confidence, contribution }]
+  outcomeDisabled Boolean
+  labelWindowDays Int      // 7, 14, or 30
+  observedMonth   String   // coarse timestamp only, e.g. "2026-07", never an exact datetime
+  createdAt       DateTime @default(now())
+
+  @@index([platform, modelVersion])
+  @@index([outcomeDisabled])
+}
+
+// ---------- Security audit log (append-only) ----------
+
+model AuditLog {
+  id                 String   @id @default(cuid())
+  orgId              String
+  actorService       String   // which worker/service performed the action
+  action             String   // e.g. CREDENTIAL_DECRYPT, CREDENTIAL_VALIDATE
+  connectedAccountId String?
+  metadata           Json?
+  occurredAt         DateTime @default(now())
+
+  org                Organization @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, occurredAt])
+}
