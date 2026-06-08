@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "migrate": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
