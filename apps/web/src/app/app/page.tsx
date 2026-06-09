@@ -1,5 +1,6 @@
 import { signOut, withAuth } from '@workos-inc/authkit-nextjs';
 import { redirect } from 'next/navigation';
+import { Logo } from '../../components/logo';
 import { type Bucket, RiskScoreCard } from '../../components/risk-score-card';
 
 // The real (non-demo) authenticated risk dashboard. Requires WorkOS env; the
@@ -60,7 +61,7 @@ export default async function AppHome({ searchParams }: { searchParams: Promise<
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-8">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Aegis</h1>
+        <Logo wordmarkClass="text-gray-900" />
         <div className="flex items-center gap-3 text-sm text-gray-600">
           <span>{user.email}</span>
           <form

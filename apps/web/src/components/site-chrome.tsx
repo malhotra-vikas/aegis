@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SITE } from '../lib/marketing';
+import { Logo, LogoMark } from './logo';
 
 // Dark theme + teal brand accent (keeprsteady-style). The marketing surfaces wrap
 // in <SitePage> so the dark theme stays scoped to marketing — /demo and /app keep
@@ -10,8 +11,8 @@ export function SiteHeader() {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <nav className="mx-auto flex max-w-5xl items-center justify-between p-4">
-        <Link href="/" className="text-lg font-semibold text-white">
-          {SITE.name}
+        <Link href="/" aria-label={SITE.name}>
+          <Logo />
         </Link>
         <div className="flex items-center gap-5 text-sm">
           <Link href="/#how" className="text-slate-300 hover:text-white">
@@ -39,7 +40,10 @@ export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-slate-800 bg-slate-950">
       <div className="mx-auto max-w-5xl space-y-2 p-6 text-sm text-slate-400">
-        <p className="font-medium text-slate-200">{SITE.name}</p>
+        <div className="flex items-center gap-2">
+          <LogoMark className="h-5 w-5" />
+          <p className="font-medium text-slate-200">{SITE.name}</p>
+        </div>
         <p>Ad-account health monitoring for Meta advertisers. We help you stay within policy and catch risk early.</p>
         <div className="flex gap-4">
           <Link href="/pricing" className="hover:text-teal-400">

@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Aegis — Ad Account Survival Layer",
   description: "Monitor ad-account health and suspension risk.",
+  icons: { icon: "/logo.svg" },
 };
 
 export default function RootLayout({
