@@ -19,7 +19,7 @@ These gate going live; none can be done from the codebase.
 - [ ] **Deploy `apps/api`** to Railway (set `APP_DATABASE_URL` to the prod `aegis_app` login, `AEGIS_MASTER_KEY`, WorkOS + Meta env).
 - [ ] **Provision `aegis_app` login in prod** — give it a password (managed secret), grant per the RLS SQL. Locally it's `aegis_app_local`.
 - [ ] **Resend domain verification** (SPF/DKIM/DMARC) — required before any lifecycle email sends.
-- [ ] **Stripe account** — products/prices for Solo/Agency/Scale + per-account metering, webhooks (needed for the upgrade path).
+- [ ] **Stripe setup** (code is built — see §B): in the Stripe dashboard (test mode) create products + recurring prices for Solo/Agency/Scale; paste the price ids into `apps/api/.env` (`STRIPE_PRICE_SOLO/AGENCY/SCALE`); set `STRIPE_SECRET_KEY`; add a webhook to `…/billing/webhook` for `checkout.session.completed` + `customer.subscription.*` and paste its signing secret into `STRIPE_WEBHOOK_SECRET`. Test locally with the Stripe CLI (`stripe listen --forward-to localhost:3001/billing/webhook`).
 - [ ] **Run ad campaigns** — your ad account + budget. Per `AEGIS_GTM_SEO §1`, paid is surgical only (retargeting + highest-intent terms); SEO is the engine. (I can draft copy + add UTM/conversion tracking on request.)
 - [ ] **Meta: register the anonymous-audit redirect URI** — add `http://localhost:3001/audit/connect/callback` (and the prod equivalent) to the Meta app's Valid OAuth Redirect URIs, so the free anonymous audit can complete.
 - [ ] **Meta App Review + Business Verification (R1)** — gates *public* Meta OAuth. Your own account works in dev mode now. Critical-path, multi-week — start early.
@@ -38,7 +38,7 @@ These gate going live; none can be done from the codebase.
 Ordered roughly by funnel value.
 
 - [x] **Anonymous OAuth audit** — DONE 2026-06-09. Anonymous, email-gated, point-in-time → `AuditResult` (no org, no stored credential). `/audit/connect` → api `/audit/connect/start|callback` → `/audit/result`. Needs the 2nd Meta redirect URI registered (action above).
-- [ ] **Stripe billing** — checkout for Solo/Agency/Scale, per-account metering, webhooks → `Subscription` state, customer portal. The upgrade path.
+- [x] **Stripe billing** — DONE 2026-06-09. Checkout (orgId in metadata) + portal + signature-verified webhook → `Subscription` via `withOrg`; `/app` shows plan + upgrade/manage. Needs Stripe dashboard setup (action in §A). Per-account *metered* add-ons (beyond tier quota) still TODO.
 - [ ] **Resend lifecycle email** — audit result → "standing changes overnight" nudge → re-audit drift → upgrade (`AEGIS_GTM_SEO §7`). Re-audit drift is the strongest paid trigger.
 - [ ] **Scale programmatic guides to 30–50** — add entries to `marketing.ts GUIDES` (factory/sitemap pick them up). Plus 5–8 pillar pages (`AEGIS_GTM_SEO §9`).
 - [ ] **Workers (`packages/workers`, BullMQ)** — scheduled polling at tier cadence, webhook ingest (Ad Account Trigger), alert fan-out. Turns point-in-time into continuous monitoring (Phase 2).

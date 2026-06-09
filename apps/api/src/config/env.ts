@@ -47,6 +47,31 @@ export function workosConfig(): WorkosConfig {
   };
 }
 
+export interface StripeConfig {
+  secretKey: string;
+  webhookSecret: string;
+}
+
+export function stripeConfig(): StripeConfig {
+  return {
+    secretKey: required('STRIPE_SECRET_KEY'),
+    webhookSecret: required('STRIPE_WEBHOOK_SECRET'),
+  };
+}
+
+export type PaidTier = 'SOLO' | 'AGENCY' | 'SCALE';
+
+/** The Stripe price id for a paid tier (from STRIPE_PRICE_<TIER>). */
+export function stripePriceId(tier: PaidTier): string {
+  return required(`STRIPE_PRICE_${tier}`);
+}
+
+/** Reverse map: which tier a Stripe price id belongs to (for webhook plan changes). */
+export function tierForPriceId(priceId: string): PaidTier | null {
+  const tiers: PaidTier[] = ['SOLO', 'AGENCY', 'SCALE'];
+  return tiers.find((t) => process.env[`STRIPE_PRICE_${t}`] === priceId) ?? null;
+}
+
 /**
  * The envelope master key, from the environment (the documented MVP path —
  * AEGIS_OAUTH_SECURITY §5). Production swaps a KMS-backed KeyWrapper in here.

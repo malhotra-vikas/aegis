@@ -44,9 +44,32 @@ async function refreshRisk() {
   redirect('/app');
 }
 
-export default async function AppHome({ searchParams }: { searchParams: Promise<{ meta?: string; accounts?: string }> }) {
+async function upgrade(formData: FormData) {
+  'use server';
+  const tier = formData.get('tier');
+  const { accessToken } = await withAuth({ ensureSignedIn: true });
+  const res = await api('/billing/checkout', accessToken, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tier }),
+  });
+  if (!res.ok) throw new Error(`checkout failed: ${res.status} ${await res.text()}`);
+  const { url } = (await res.json()) as { url: string };
+  redirect(url);
+}
+
+async function manageBilling() {
+  'use server';
+  const { accessToken } = await withAuth({ ensureSignedIn: true });
+  const res = await api('/billing/portal', accessToken, { method: 'POST' });
+  if (!res.ok) throw new Error(`portal failed: ${res.status}`);
+  const { url } = (await res.json()) as { url: string };
+  redirect(url);
+}
+
+export default async function AppHome({ searchParams }: { searchParams: Promise<{ meta?: string; upgraded?: string }> }) {
   const { user, accessToken } = await withAuth({ ensureSignedIn: true });
-  const { meta } = await searchParams;
+  const { meta, upgraded } = await searchParams;
 
   let accounts: AccountRisk[] = [];
   let loadError: string | null = null;
@@ -57,6 +80,15 @@ export default async function AppHome({ searchParams }: { searchParams: Promise<
   } catch {
     loadError = 'api unreachable';
   }
+
+  let plan: { tier: string; accountQuota: number } | null = null;
+  try {
+    const res = await api('/billing/subscription', accessToken);
+    if (res.ok) plan = (await res.json()) as { tier: string; accountQuota: number } | null;
+  } catch {
+    plan = null;
+  }
+  const tier = plan?.tier ?? 'FREE';
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-8">
@@ -79,6 +111,32 @@ export default async function AppHome({ searchParams }: { searchParams: Promise<
 
       {meta === 'connected' && <p className="rounded bg-green-50 p-3 text-green-700">Meta account(s) connected.</p>}
       {meta === 'error' && <p className="rounded bg-red-50 p-3 text-red-700">Meta connection failed. Check the api logs.</p>}
+      {upgraded && <p className="rounded bg-green-50 p-3 text-green-700">You’re upgraded — continuous monitoring is on.</p>}
+
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4">
+        <div className="text-sm">
+          <span className="text-gray-500">Plan</span>{' '}
+          <span className="font-semibold text-gray-900">{tier}</span>
+          {plan && <span className="text-gray-500"> · up to {plan.accountQuota} accounts</span>}
+        </div>
+        {tier === 'FREE' ? (
+          <form action={upgrade} className="flex gap-2">
+            <button name="tier" value="SOLO" className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">
+              Solo · $39
+            </button>
+            <button name="tier" value="AGENCY" className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
+              Agency · $149
+            </button>
+            <button name="tier" value="SCALE" className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">
+              Scale · $449
+            </button>
+          </form>
+        ) : (
+          <form action={manageBilling}>
+            <button className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">Manage billing</button>
+          </form>
+        )}
+      </section>
 
       <div className="flex gap-3">
         <form action={connectMeta}>

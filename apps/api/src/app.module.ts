@@ -3,6 +3,8 @@ import { AccountsController } from './accounts/accounts.controller.js';
 import { AssessmentService } from './assessment/assessment.service.js';
 import { AuditController } from './audit/audit.controller.js';
 import { AuditService } from './audit/audit.service.js';
+import { BillingController } from './billing/billing.controller.js';
+import { BillingService } from './billing/billing.service.js';
 import { IdentityService } from './auth/identity.service.js';
 import { WorkosAuthGuard } from './auth/workos-auth.guard.js';
 import { WorkosAuthService } from './auth/workos-auth.service.js';
@@ -14,7 +16,7 @@ import { MetaOAuthService } from './oauth/meta-oauth.service.js';
 import { PrismaService } from './prisma/prisma.service.js';
 
 @Module({
-  controllers: [HealthController, MeController, MetaOAuthController, AccountsController, AuditController],
+  controllers: [HealthController, MeController, MetaOAuthController, AccountsController, AuditController, BillingController],
   providers: [
     PrismaService,
     WorkosAuthService,
@@ -24,6 +26,7 @@ import { PrismaService } from './prisma/prisma.service.js';
     MetaOAuthService,
     AssessmentService,
     AuditService,
+    BillingService,
   ],
 })
 export class AppModule {}
