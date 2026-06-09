@@ -3,6 +3,7 @@
 > Snapshot of working state as of **2026-06-08**, written so a fresh session
 > can continue without losing a beat. Long-term plan: `ROADMAP.md`. Demo guide:
 > `DEMO.md`. How-to-work + locked decisions: `../CLAUDE.md`.
+> **Open todos + your action items: `BACKLOG.md`** (the durable tracker).
 
 ## Where we are
 
