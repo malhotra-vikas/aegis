@@ -21,6 +21,7 @@ export function createPrismaClient(connectionString = process.env.DATABASE_URL):
   return new PrismaClient({ adapter });
 }
 
+export { applyTenantRls } from './rls.js';
 export { PrismaClient } from './generated/prisma/client.js';
 export { Prisma } from './generated/prisma/client.js';
 export * from './generated/prisma/enums.js';
