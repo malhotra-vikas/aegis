@@ -13,6 +13,8 @@ function required(name: string): string {
 
 export interface MetaConfig extends MetaOAuthConfig {
   redirectUri: string;
+  /** Separate callback for the anonymous free audit (distinct flow). */
+  auditRedirectUri: string;
   scopes: string[];
 }
 
@@ -22,6 +24,7 @@ export function metaConfig(): MetaConfig {
     appSecret: required('META_APP_SECRET'),
     graphVersion: process.env.META_GRAPH_VERSION ?? 'v21.0',
     redirectUri: required('META_OAUTH_REDIRECT_URI'),
+    auditRedirectUri: process.env.META_AUDIT_REDIRECT_URI ?? 'http://localhost:3001/audit/connect/callback',
     scopes: (process.env.META_OAUTH_SCOPES ?? 'ads_read,business_management').split(','),
   };
 }

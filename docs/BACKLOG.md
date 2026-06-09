@@ -21,6 +21,7 @@ These gate going live; none can be done from the codebase.
 - [ ] **Resend domain verification** (SPF/DKIM/DMARC) — required before any lifecycle email sends.
 - [ ] **Stripe account** — products/prices for Solo/Agency/Scale + per-account metering, webhooks (needed for the upgrade path).
 - [ ] **Run ad campaigns** — your ad account + budget. Per `AEGIS_GTM_SEO §1`, paid is surgical only (retargeting + highest-intent terms); SEO is the engine. (I can draft copy + add UTM/conversion tracking on request.)
+- [ ] **Meta: register the anonymous-audit redirect URI** — add `http://localhost:3001/audit/connect/callback` (and the prod equivalent) to the Meta app's Valid OAuth Redirect URIs, so the free anonymous audit can complete.
 - [ ] **Meta App Review + Business Verification (R1)** — gates *public* Meta OAuth. Your own account works in dev mode now. Critical-path, multi-week — start early.
 - [x] **WorkOS account + keys** — done (auth live).
 - [ ] **WorkOS dashboard: set logout/homepage redirect** to the app URL (fixes the sign-out `app-homepage-url-not-found`).

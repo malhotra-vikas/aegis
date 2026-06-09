@@ -6,13 +6,16 @@ beforeAll(() => {
 });
 
 describe('oauth state', () => {
-  it('round-trips the orgId', () => {
-    const state = signState('org_1');
-    expect(verifyState(state).orgId).toBe('org_1');
+  it('round-trips a claim (orgId)', () => {
+    expect(verifyState(signState({ orgId: 'org_1' })).orgId).toBe('org_1');
+  });
+
+  it('round-trips an email claim (anonymous audit)', () => {
+    expect(verifyState(signState({ email: 'a@b.com' })).email).toBe('a@b.com');
   });
 
   it('rejects a tampered payload', () => {
-    const [, sig] = signState('org_1').split('.');
+    const [, sig] = signState({ orgId: 'org_1' }).split('.');
     const forged = `${Buffer.from(JSON.stringify({ orgId: 'org_evil', ts: Date.now() })).toString('base64url')}.${sig}`;
     expect(() => verifyState(forged)).toThrow();
   });
@@ -22,7 +25,7 @@ describe('oauth state', () => {
   });
 
   it('rejects an expired state', () => {
-    const old = signState('org_1', Date.now() - 20 * 60 * 1000);
+    const old = signState({ orgId: 'org_1' }, Date.now() - 20 * 60 * 1000);
     expect(() => verifyState(old)).toThrow(/expired/);
   });
 });

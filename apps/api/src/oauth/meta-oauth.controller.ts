@@ -18,7 +18,7 @@ export class MetaOAuthController {
   @Get('start')
   @UseGuards(WorkosAuthGuard)
   start(@CurrentOrg() orgId: string): { authorizationUrl: string } {
-    return { authorizationUrl: this.oauth.authorizationUrl(signState(orgId)) };
+    return { authorizationUrl: this.oauth.authorizationUrl(signState({ orgId })) };
   }
 
   // Meta redirects here with ?code&state (or ?error if the user declined). We
@@ -35,6 +35,7 @@ export class MetaOAuthController {
     try {
       if (error || !code || !state) throw new Error(`oauth declined or missing params (${error ?? 'no code/state'})`);
       const { orgId } = verifyState(state);
+      if (!orgId) throw new Error('state missing orgId');
       const { connectedAccountIds } = await this.oauth.handleCallback(orgId, code);
       res.redirect(`${web}/app?meta=connected&accounts=${connectedAccountIds.length}`);
     } catch (e) {

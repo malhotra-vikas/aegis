@@ -112,7 +112,10 @@ export function AuditForm() {
               <p className="mt-1 text-sm text-slate-400">
                 The full audit connects your account read-only and scores it against every signal — no self-reporting.
               </p>
-              <Link href="/audit/connect" className="mt-3 inline-block rounded-lg bg-teal-400 px-5 py-2 font-semibold text-slate-950 hover:bg-teal-300">
+              <Link
+                href={`/audit/connect?email=${encodeURIComponent(email)}`}
+                className="mt-3 inline-block rounded-lg bg-teal-400 px-5 py-2 font-semibold text-slate-950 hover:bg-teal-300"
+              >
                 Connect for the full audit
               </Link>
             </div>

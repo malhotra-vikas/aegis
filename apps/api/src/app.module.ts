@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AccountsController } from './accounts/accounts.controller.js';
 import { AssessmentService } from './assessment/assessment.service.js';
 import { AuditController } from './audit/audit.controller.js';
+import { AuditService } from './audit/audit.service.js';
 import { IdentityService } from './auth/identity.service.js';
 import { WorkosAuthGuard } from './auth/workos-auth.guard.js';
 import { WorkosAuthService } from './auth/workos-auth.service.js';
@@ -22,6 +23,7 @@ import { PrismaService } from './prisma/prisma.service.js';
     CredentialsService,
     MetaOAuthService,
     AssessmentService,
+    AuditService,
   ],
 })
 export class AppModule {}
