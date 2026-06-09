@@ -40,11 +40,24 @@ export function AuditForm() {
   const [captured, setCaptured] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  function computeVerdict() {
-    // Indicative only — noisy-OR over "yes" answers, mirroring the engine's shape.
-    const product = QUESTIONS.reduce((acc, q) => (answers[q.key] ? acc * (1 - q.weight) : acc), 1);
+  // Indicative only — noisy-OR over "yes" answers, mirroring the engine's shape.
+  function scoreFor(a: Record<string, boolean>): { score: number; bucket: 'GREEN' | 'AMBER' | 'RED' } {
+    const product = QUESTIONS.reduce((acc, q) => (a[q.key] ? acc * (1 - q.weight) : acc), 1);
     const score = Math.round(100 * (1 - product));
-    setVerdict({ score, bucket: bucketOf(score) });
+    return { score, bucket: bucketOf(score) };
+  }
+
+  function onToggle(key: string, checked: boolean) {
+    const next = { ...answers, [key]: checked };
+    setAnswers(next);
+    if (verdict) setVerdict(scoreFor(next)); // re-do the read live once they've seen one
+  }
+
+  function startOver() {
+    setAnswers({});
+    setVerdict(null);
+    setEmail('');
+    setCaptured(false);
   }
 
   async function captureEmail(e: FormEvent) {
@@ -66,26 +79,32 @@ export function AuditForm() {
               type="checkbox"
               className="h-5 w-5 accent-teal-400"
               checked={!!answers[q.key]}
-              onChange={(ev) => setAnswers((a) => ({ ...a, [q.key]: ev.target.checked }))}
+              onChange={(ev) => onToggle(q.key, ev.target.checked)}
             />
           </label>
         ))}
       </div>
 
       {!verdict && (
-        <button onClick={computeVerdict} className="rounded-lg bg-teal-400 px-5 py-2.5 font-semibold text-slate-950 hover:bg-teal-300">
+        <button onClick={() => setVerdict(scoreFor(answers))} className="rounded-lg bg-teal-400 px-5 py-2.5 font-semibold text-slate-950 hover:bg-teal-300">
           See my risk read
         </button>
       )}
 
       {verdict && (
         <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center gap-3">
-            <span className={`rounded px-3 py-1 text-sm font-semibold ${BUCKET_CLASSES[verdict.bucket]}`}>
-              {verdict.bucket} · {verdict.score}
-            </span>
-            <span className="text-sm text-slate-400">Indicative risk read</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className={`rounded px-3 py-1 text-sm font-semibold ${BUCKET_CLASSES[verdict.bucket]}`}>
+                {verdict.bucket} · {verdict.score}
+              </span>
+              <span className="text-sm text-slate-400">Indicative risk read</span>
+            </div>
+            <button onClick={startOver} className="text-sm text-slate-400 underline hover:text-slate-200">
+              Start over
+            </button>
           </div>
+          <p className="text-xs text-slate-500">Change any answer above and your read updates instantly.</p>
           <p className="text-slate-300">{VERDICT_COPY[verdict.bucket]}</p>
 
           {!captured ? (
