@@ -26,9 +26,16 @@ describe('WorkosAuthService.verify', () => {
     });
   });
 
-  it('rejects a token missing org_id', async () => {
+  it('accepts a token without org_id (solo user, no org context)', async () => {
     const svc = new WorkosAuthService(publicKey);
-    await expect(svc.verify(await sign({ sub: 'user_1' }))).rejects.toThrow();
+    const principal = await svc.verify(await sign({ sub: 'user_1' }));
+    expect(principal.workosUserId).toBe('user_1');
+    expect(principal.workosOrgId).toBeUndefined();
+  });
+
+  it('rejects a token missing the subject', async () => {
+    const svc = new WorkosAuthService(publicKey);
+    await expect(svc.verify(await sign({ org_id: 'org_1' }))).rejects.toThrow();
   });
 
   it('rejects a token signed by a different key', async () => {

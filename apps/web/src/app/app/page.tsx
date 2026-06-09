@@ -19,7 +19,7 @@ export default async function AppHome() {
       cache: 'no-store',
     });
     if (res.ok) me = await res.json();
-    else apiError = `api /me responded ${res.status}`;
+    else apiError = `api /me responded ${res.status}: ${await res.text()}`;
   } catch {
     apiError = 'api unreachable';
   }

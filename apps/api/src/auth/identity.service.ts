@@ -16,9 +16,13 @@ export class IdentityService {
   async resolveOrgId(principal: WorkosPrincipal): Promise<string> {
     const db = this.prisma.client;
 
+    // A WorkOS org maps 1:1 to an Organization. A user with no org context
+    // (solo signup) gets a personal org keyed by their user id.
+    const orgKey = principal.workosOrgId ?? `user:${principal.workosUserId}`;
+    const orgName = principal.workosOrgId ?? principal.email ?? orgKey;
     const org = await db.organization.upsert({
-      where: { workosOrgId: principal.workosOrgId },
-      create: { name: principal.workosOrgId, workosOrgId: principal.workosOrgId },
+      where: { workosOrgId: orgKey },
+      create: { name: orgName, workosOrgId: orgKey },
       update: {},
     });
 

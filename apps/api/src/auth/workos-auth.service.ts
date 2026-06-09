@@ -3,7 +3,9 @@ import { createRemoteJWKSet, type JWTPayload, jwtVerify } from 'jose';
 import { workosConfig } from '../config/env.js';
 
 export interface WorkosPrincipal {
-  workosOrgId: string;
+  /** WorkOS organization id, or undefined for a user with no org context
+   *  (e.g. a solo signup) — IdentityService gives them a personal org. */
+  workosOrgId?: string;
   workosUserId: string;
   email?: string;
   name?: string;
@@ -39,13 +41,12 @@ export class WorkosAuthService {
       throw new UnauthorizedException('invalid token');
     }
 
-    const workosOrgId = typeof payload.org_id === 'string' ? payload.org_id : undefined;
     const workosUserId = payload.sub;
-    if (!workosOrgId || !workosUserId) {
-      throw new UnauthorizedException('token missing organization or subject');
+    if (!workosUserId) {
+      throw new UnauthorizedException('token missing subject');
     }
     return {
-      workosOrgId,
+      workosOrgId: typeof payload.org_id === 'string' ? payload.org_id : undefined,
       workosUserId,
       email: typeof payload.email === 'string' ? payload.email : undefined,
       name: typeof payload.name === 'string' ? payload.name : undefined,
