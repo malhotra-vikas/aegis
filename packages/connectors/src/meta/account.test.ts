@@ -60,3 +60,39 @@ describe('fetchAdAccounts', () => {
     expect(await fetchAdAccounts(c, { accessToken: 't' })).toEqual([]);
   });
 });
+
+function clientWithCalls(responses: unknown[]) {
+  const fetchImpl = vi.fn();
+  for (const r of responses) fetchImpl.mockResolvedValueOnce(new Response(JSON.stringify(r), { status: 200 }));
+  const c = new MetaGraphClient({ appSecret: 's', graphVersion: 'v21.0', fetchImpl: fetchImpl as unknown as typeof fetch });
+  return { c, fetchImpl };
+}
+
+describe('fetchAdAccountPull — disapproved ads', () => {
+  it('fetches the disapproved-ad count for an active account', async () => {
+    const { c, fetchImpl } = clientWithCalls([{ account_status: 1 }, { summary: { total_count: 3 } }]);
+    const pull = await fetchAdAccountPull(c, { adAccountId: 'act_1', accessToken: 't' });
+
+    expect(pull.disapproved_active_ad_count).toBe(3);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const adsUrl = String(fetchImpl.mock.calls[1]![0]);
+    expect(adsUrl).toContain('/act_1/ads');
+    expect(adsUrl).toContain('effective_status');
+    expect(adsUrl).toContain('summary=total_count');
+  });
+
+  it('skips the ads edge for a non-active account (status dominates)', async () => {
+    const { c, fetchImpl } = clientWithCalls([{ account_status: 2, disable_reason: 1 }]);
+    const pull = await fetchAdAccountPull(c, { adAccountId: 'act_1', accessToken: 't' });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(pull.disapproved_active_ad_count).toBeUndefined();
+  });
+
+  it('produces a disapproval count the engine scores (contract)', async () => {
+    const { c } = clientWithCalls([{ account_status: 1 }, { summary: { total_count: 4 } }]);
+    const pull = await fetchAdAccountPull(c, { adAccountId: 'act_1', accessToken: 't' });
+    const normalized = metaAdapter.normalize(pull);
+    expect(normalized.disapprovedActiveAdCount).toBe(4);
+  });
+});

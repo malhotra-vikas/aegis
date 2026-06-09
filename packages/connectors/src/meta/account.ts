@@ -6,6 +6,7 @@ import type { MetaGraphClient } from './client.js';
 // mapped against live Meta docs inside the risk-engine adapter, never here — the
 // connector passes the raw integer through untouched (spec 4 accuracy contract).
 const AD_ACCOUNT_FIELDS = 'account_status,disable_reason';
+const ACCOUNT_STATUS_ACTIVE = 1; // Meta's ACTIVE code; the only state worth (and able) to query for ad-level issues
 
 interface MetaAdAccountNode {
   account_status?: number;
@@ -30,10 +31,29 @@ export async function fetchAdAccountPull(
     params: { fields: AD_ACCOUNT_FIELDS },
   });
 
-  return {
+  const pull: RawMetaPull = {
     account_status: account.account_status,
     disable_reason: account.disable_reason ?? null,
   };
+
+  // Ad-level policy signals only resolve for a live account; for a disabled/closed
+  // one the status signal already dominates and the /ads edge errors anyway. Errors
+  // here propagate — we never default a failed read to "0 disapprovals" (fail closed:
+  // a read we couldn't complete must not look healthy).
+  if (account.account_status === ACCOUNT_STATUS_ACTIVE) {
+    pull.disapproved_active_ad_count = await fetchDisapprovedAdCount(client, node, opts.accessToken);
+  }
+
+  return pull;
+}
+
+/** Count of currently-disapproved ads, via the ads edge's summary total_count. */
+async function fetchDisapprovedAdCount(client: MetaGraphClient, node: string, accessToken: string): Promise<number> {
+  const res = await client.get<{ summary?: { total_count?: number } }>(`${node}/ads`, {
+    accessToken,
+    params: { effective_status: '["DISAPPROVED"]', summary: 'total_count', limit: '0' },
+  });
+  return res.summary?.total_count ?? 0;
 }
 
 interface MetaAdAccountsEdge {
