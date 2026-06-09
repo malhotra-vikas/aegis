@@ -35,3 +35,23 @@ export async function fetchAdAccountPull(
     disable_reason: account.disable_reason ?? null,
   };
 }
+
+interface MetaAdAccountsEdge {
+  data?: Array<{ id?: string; account_id?: string; name?: string }>;
+}
+
+/** List the ad accounts a token grants access to (the connect flow: the user
+ *  picks which to monitor). `id` is the `act_<n>` form used as externalId. */
+export async function fetchAdAccounts(
+  client: MetaGraphClient,
+  opts: { accessToken: string },
+): Promise<Array<{ externalId: string; displayName: string | null }>> {
+  const edge = await client.get<MetaAdAccountsEdge>('me/adaccounts', {
+    accessToken: opts.accessToken,
+    params: { fields: 'account_id,name' },
+  });
+  return (edge.data ?? []).map((a) => ({
+    externalId: a.id ?? `act_${a.account_id ?? ''}`,
+    displayName: a.name ?? null,
+  }));
+}

@@ -1,6 +1,6 @@
 import { metaAdapter } from '@aegis/risk-engine';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchAdAccountPull } from './account.js';
+import { fetchAdAccountPull, fetchAdAccounts } from './account.js';
 import { MetaGraphClient } from './client.js';
 
 function clientReturning(node: unknown) {
@@ -36,5 +36,27 @@ describe('fetchAdAccountPull', () => {
     const normalized = metaAdapter.normalize(pull);
     expect(normalized.accountStatus).toBe('pending_review');
     expect(normalized.missingRequiredFields).toEqual([]);
+  });
+});
+
+describe('fetchAdAccounts', () => {
+  it('maps the me/adaccounts edge to externalId + displayName', async () => {
+    const { c, fetchImpl } = clientReturning({
+      data: [
+        { id: 'act_111', account_id: '111', name: 'Acme' },
+        { id: 'act_222', account_id: '222', name: 'Beta' },
+      ],
+    });
+    const accounts = await fetchAdAccounts(c, { accessToken: 't' });
+    expect(String(fetchImpl.mock.calls[0]![0])).toContain('/v21.0/me/adaccounts');
+    expect(accounts).toEqual([
+      { externalId: 'act_111', displayName: 'Acme' },
+      { externalId: 'act_222', displayName: 'Beta' },
+    ]);
+  });
+
+  it('returns an empty list when the edge has no data', async () => {
+    const { c } = clientReturning({});
+    expect(await fetchAdAccounts(c, { accessToken: 't' })).toEqual([]);
   });
 });
