@@ -6,8 +6,10 @@ import {
   inspectToken,
   MetaGraphClient,
 } from '@aegis/connectors';
+import { SnapshotReason } from '@aegis/db';
 import type { TokenBundle } from '@aegis/shared';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { AssessmentService } from '../assessment/assessment.service.js';
 import { metaConfig, type MetaConfig } from '../config/env.js';
 import { CredentialsService } from '../credentials/credentials.service.js';
 
@@ -21,8 +23,12 @@ import { CredentialsService } from '../credentials/credentials.service.js';
 @Injectable()
 export class MetaOAuthService {
   private cfg?: MetaConfig;
+  private readonly logger = new Logger('MetaOAuth');
 
-  constructor(private readonly credentials: CredentialsService) {}
+  constructor(
+    private readonly credentials: CredentialsService,
+    private readonly assessment: AssessmentService,
+  ) {}
 
   private config(): MetaConfig {
     return (this.cfg ??= metaConfig());
@@ -55,6 +61,15 @@ export class MetaOAuthService {
     for (const account of accounts) {
       connectedAccountIds.push(await this.credentials.storeMetaCredential(orgId, account, bundle));
     }
+
+    // Score the freshly-connected accounts so the dashboard has data immediately.
+    // Non-fatal: the connection already succeeded if scoring hiccups.
+    try {
+      await this.assessment.assessOrg(orgId, SnapshotReason.INITIAL);
+    } catch (e) {
+      this.logger.error(`initial assessment failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
     return { connectedAccountIds };
   }
 }

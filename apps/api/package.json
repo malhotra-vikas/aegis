@@ -17,6 +17,7 @@
   "dependencies": {
     "@aegis/connectors": "workspace:*",
     "@aegis/db": "workspace:*",
+    "@aegis/risk-engine": "workspace:*",
     "@aegis/shared": "workspace:*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",

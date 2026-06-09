@@ -1,4 +1,4 @@
-import { sealTokenBundle, type KeyWrapper, type TokenBundle } from '@aegis/shared';
+import { openTokenBundle, sealTokenBundle, type KeyWrapper, type TokenBundle } from '@aegis/shared';
 import { Injectable } from '@nestjs/common';
 import { buildKeyWrapper } from '../config/env.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -75,5 +75,21 @@ export class CredentialsService {
 
       return connected.id;
     });
+  }
+
+  /** Decrypt the stored credential for an account, or null if none exists. */
+  async openMetaCredential(orgId: string, connectedAccountId: string): Promise<TokenBundle | null> {
+    const row = await this.prisma.withOrg(orgId, (tx) => tx.credential.findUnique({ where: { connectedAccountId } }));
+    if (!row) return null;
+    return openTokenBundle(
+      {
+        ciphertext: Buffer.from(row.ciphertext),
+        iv: Buffer.from(row.iv),
+        authTag: Buffer.from(row.authTag),
+        wrappedDataKey: Buffer.from(row.wrappedDataKey),
+        keyVersion: row.keyVersion,
+      },
+      this.keyWrapper(),
+    );
   }
 }
