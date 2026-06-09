@@ -26,6 +26,11 @@ export function metaConfig(): MetaConfig {
   };
 }
 
+/** Where the web tier lives, for redirecting the browser back after OAuth. */
+export function webBaseUrl(): string {
+  return process.env.WEB_BASE_URL ?? 'http://localhost:3000';
+}
+
 export interface WorkosConfig {
   jwksUrl: string;
   issuer?: string;
