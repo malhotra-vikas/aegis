@@ -128,6 +128,9 @@ enum LeadStatus {
 model Organization {
   id                String   @id @default(cuid())
   name              String
+  // WorkOS organization id — the tenant link for real auth (docs/design/AUTH.md).
+  // Null for demo/seeded orgs that never signed in through WorkOS.
+  workosOrgId       String?  @unique
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deletedAt         DateTime?
@@ -144,6 +147,8 @@ model Organization {
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
+  // WorkOS user id — set on first real sign-in (docs/design/AUTH.md).
+  workosUserId String?      @unique
   name         String?
   platformRole PlatformRole @default(CUSTOMER)
   createdAt    DateTime     @default(now())
