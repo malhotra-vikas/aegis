@@ -76,6 +76,7 @@ These are settled. Implement consistent with them; do not relitigate in code. Fu
 - System user tokens preferred for Agency/Scale; long-lived user tokens for the quick path.
 - Pricing is per-account (drives NRR). Slack alerts are Agency tier and up.
 - Free audit is point-in-time, email-gated, anonymous until upgrade.
+- web tier holds no Prisma: all tenant data flows through the NestJS api, which sets the per-request RLS GUC. `/demo` is the explicit exception (keeps direct Prisma). Decided 2026-06-08.
 
 ---
 
