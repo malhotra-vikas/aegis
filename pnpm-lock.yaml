@@ -32,6 +32,9 @@ importers:
       '@aegis/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@aegis/risk-engine':
+        specifier: workspace:*
+        version: link:../../packages/risk-engine
       '@aegis/shared':
         specifier: workspace:*
         version: link:../../packages/shared
