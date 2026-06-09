@@ -54,6 +54,15 @@ BEGIN
 END
 $rls$;
 
+-- Organization and User are NOT tenant-scoped (Organization is the tenant root,
+-- User is global identity), so they carry no RLS policy. The API role still
+-- provisions and reads them during auth, so grant it DML there; isolation is
+-- app-level (always query by id), per AEGIS_DATA_MODEL.md §3. No DELETE — removal
+-- goes through the soft-delete/purge path.
+GRANT USAGE ON SCHEMA public TO aegis_app;
+GRANT SELECT, INSERT, UPDATE ON "Organization" TO aegis_app;
+GRANT SELECT, INSERT, UPDATE ON "User" TO aegis_app;
+
 -- =====================================================================
 -- 2. HealthSnapshot partitioning (AEGIS_DATA_MODEL.md §4.1) — NOT YET APPLIED
 -- =====================================================================
