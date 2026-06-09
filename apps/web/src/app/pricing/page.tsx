@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SiteFooter, SiteHeader } from '../../components/site-chrome';
+import { SitePage } from '../../components/site-chrome';
 import { SITE, TIERS } from '../../lib/marketing';
 
 export const metadata: Metadata = {
@@ -24,43 +24,44 @@ export default function Pricing() {
   };
 
   return (
-    <>
+    <SitePage>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <SiteHeader />
 
       <section className="mx-auto max-w-5xl px-4 py-16">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Pricing</h1>
-          <p className="mt-3 text-gray-600">Start with a free audit. Turn on monitoring when you want it watched.</p>
+          <h1 className="text-3xl font-bold text-white">Pricing</h1>
+          <p className="mt-3 text-slate-400">Start with a free audit. Turn on monitoring when you want it watched.</p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-4">
           {TIERS.map((t) => (
             <div
               key={t.name}
-              className={`flex flex-col rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md ${
-                t.highlight ? 'border-blue-500 ring-1 ring-blue-500 md:-translate-y-2' : 'border-gray-200'
+              className={`flex flex-col rounded-xl border bg-slate-900 p-5 transition hover:border-slate-700 ${
+                t.highlight ? 'border-teal-400 ring-1 ring-teal-400 md:-translate-y-2' : 'border-slate-800'
               }`}
             >
-              {t.highlight && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">Most popular</p>}
-              <h2 className="text-lg font-semibold">{t.name}</h2>
+              {t.highlight && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-400">Most popular</p>}
+              <h2 className="text-lg font-semibold text-white">{t.name}</h2>
               <p className="mt-2">
-                <span className="text-3xl font-bold">{t.price}</span>
-                <span className="text-gray-500">{t.cadence}</span>
+                <span className="text-3xl font-bold text-white">{t.price}</span>
+                <span className="text-slate-400">{t.cadence}</span>
               </p>
-              <p className="mt-1 text-sm text-gray-500">{t.accounts}</p>
-              <ul className="mt-4 flex-1 space-y-2 text-sm text-gray-700">
+              <p className="mt-1 text-sm text-slate-400">{t.accounts}</p>
+              <ul className="mt-4 flex-1 space-y-2 text-sm text-slate-300">
                 {t.features.map((f) => (
                   <li key={f} className="flex gap-2">
-                    <span className="text-green-600">✓</span>
+                    <span className="text-teal-400">✓</span>
                     {f}
                   </li>
                 ))}
               </ul>
               <Link
                 href={t.name === 'Free' ? '/audit' : '/app'}
-                className={`mt-5 rounded-lg px-4 py-2 text-center text-sm font-medium ${
-                  t.highlight ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-gray-300 hover:bg-gray-50'
+                className={`mt-5 rounded-lg px-4 py-2 text-center text-sm font-semibold transition ${
+                  t.highlight
+                    ? 'bg-teal-400 text-slate-950 hover:bg-teal-300'
+                    : 'border border-slate-700 text-slate-200 hover:bg-slate-800'
                 }`}
               >
                 {t.cta}
@@ -69,24 +70,22 @@ export default function Pricing() {
           ))}
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Per-account pricing — add client accounts as you grow, billed automatically.
         </p>
 
         <div className="mx-auto mt-16 max-w-2xl">
-          <h2 className="text-2xl font-semibold">Questions</h2>
+          <h2 className="text-2xl font-semibold text-white">Questions</h2>
           <dl className="mt-6 space-y-5">
             {FAQS.map((f) => (
               <div key={f.q}>
-                <dt className="font-medium">{f.q}</dt>
-                <dd className="mt-1 text-gray-600">{f.a}</dd>
+                <dt className="font-medium text-white">{f.q}</dt>
+                <dd className="mt-1 text-slate-400">{f.a}</dd>
               </div>
             ))}
           </dl>
         </div>
       </section>
-
-      <SiteFooter />
-    </>
+    </SitePage>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { SiteFooter, SiteHeader } from '../../components/site-chrome';
+import { SitePage } from '../../components/site-chrome';
 import { SITE } from '../../lib/marketing';
 import { AuditForm } from './audit-form';
 
@@ -11,11 +11,10 @@ export const metadata: Metadata = {
 
 export default function AuditPage() {
   return (
-    <>
-      <SiteHeader />
+    <SitePage>
       <section className="mx-auto max-w-2xl px-4 py-12">
-        <h1 className="text-3xl font-bold">Free ad-account health check</h1>
-        <p className="mt-3 text-gray-600">
+        <h1 className="text-3xl font-bold text-white">Free ad-account health check</h1>
+        <p className="mt-3 text-slate-400">
           Answer a few quick questions for an indicative risk read. Then connect your Meta account read-only for the full audit —
           scored against every signal, with the specific fixes.
         </p>
@@ -23,7 +22,6 @@ export default function AuditPage() {
           <AuditForm />
         </div>
       </section>
-      <SiteFooter />
-    </>
+    </SitePage>
   );
 }
