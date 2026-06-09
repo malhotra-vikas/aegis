@@ -23,7 +23,7 @@ export function SiteHeader() {
           <Link href="/guides" className="text-slate-300 hover:text-white">
             Guides
           </Link>
-          <Link href="/app" className="text-slate-300 hover:text-white">
+          <Link href="/login" className="text-slate-300 hover:text-white">
             Sign in
           </Link>
           <Link href="/audit" className="rounded-lg bg-teal-400 px-3 py-1.5 font-semibold text-slate-950 hover:bg-teal-300">
