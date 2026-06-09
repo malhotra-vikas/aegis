@@ -10,3 +10,6 @@ packages/db/src/generated/
 !.env.example
 *.log
 .DS_Store
+
+# TypeScript incremental build info
+*.tsbuildinfo
