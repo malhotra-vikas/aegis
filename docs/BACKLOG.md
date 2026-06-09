@@ -50,6 +50,12 @@ Ordered roughly by funnel value.
 - [ ] **HealthSnapshot partitioning + tiered retention** (Phase 2, `AEGIS_DATA_MODEL §4`) — never archive `isOutcomeLabeled` rows.
 - [ ] **Outcome-labeling job** (the moat) — label snapshots ±7/14/30d around a confirmed disable; feeds v2 scoring.
 
+### Sales-assist & growth (added 2026-06-09; full detail in `ROADMAP §4a–4b`)
+- [ ] **Sales-rep attribution at signup** — carry `?ref=<rep>` through the funnel → cookie → persisted on `Lead`/`AuditResult` → `Organization` at upgrade, so the sourcing rep is credited at onboarding. Builds on the `Lead.owner` / SALES-role CRM scaffolding.
+- [ ] **"Request a demo" CTA (Cal.com)** — demo booking on the marketing pages (landing + pricing / Scale "Talk to us") via a Cal.com link/embed; captured as a `Lead` (source=demo), attributed via `ref`.
+- [ ] **Lead → Slack claim flow** — every incoming lead posts to a sales Slack channel with a **Claim** action; the claimer becomes `Lead.owner` → gets commission on conversion. Reuses the Agency Slack transport; needs a Slack app with interactive actions + race-safe single-claim.
+- [ ] **Social content engine** — generate platform-tailored post drafts (X/LinkedIn/Reddit) from the taxonomy/guides via the Claude API, with a free-audit CTA; human-reviewed before posting; UTM/`ref`-tagged for attribution.
+
 ---
 
 ## C. Decisions on record

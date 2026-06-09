@@ -123,6 +123,55 @@ These are **founder/validation** work, mostly not code, but they gate the build.
 
 ---
 
+## 4a. Sales-assisted GTM & lead attribution
+
+> The funnel is PLG/self-serve first (`AEGIS_GTM_SEO §1`), but a thin sales-assist
+> layer captures who sourced a lead so the right rep is credited at onboarding.
+> Builds on the existing sales-CRM scaffolding (`Lead`, `Lead.owner` via the
+> `LeadOwner` relation, `User.platformRole = SALES`).
+
+- [ ] **Referral / sales-rep attribution at signup.** Carry a reference id through
+      the funnel (`?ref=<rep code>` on any entry → cookie → persisted on the
+      `Lead`/`AuditResult`, then onto the `Organization` at upgrade). Maps the
+      sourcing sales member so commission is unambiguous even months later.
+      Decide the id scheme (per-rep code vs `User.id`) and where it's stamped
+      (lead capture, anonymous audit, and WorkOS-signup provisioning).
+- [ ] **"Request a demo" CTA (Cal.com).** A demo CTA on the marketing pages
+      (landing + pricing; the Scale "Talk to us" already implies it) that books a
+      meeting via a Cal.com link/embed. Serves the higher tiers (Agency/Scale)
+      where a human touch lifts conversion. Capture the booking as a `Lead` with
+      source = demo, attributed via the same `ref` mechanism.
+- [ ] **Lead → Slack claim flow (commission integrity).** Every incoming lead
+      (audit email, demo booking, signup) posts to a sales Slack channel with a
+      **Claim** action; the claimer is recorded as the `Lead.owner`. If that lead
+      converts to a paid org, the owning rep gets the commission. Reuses the
+      Agency-tier Slack alerting transport (§4 / `packages/workers`); needs a Slack
+      app with interactive actions (claim button → callback → set owner, with a
+      race-safe single-claim guarantee).
+
+---
+
+## 4b. Social content engine (distribution)
+
+> Same flywheel as SEO (`AEGIS_GTM_SEO §4`): one taxonomy → many jobs. Turn the
+> risk signals / guides / (later) outcome data into ready-to-post social drafts
+> that route to the free audit, feeding the top of the funnel.
+
+- [ ] **Content-generation module.** From a source (a signal/guide, a remediation
+      playbook, or an aggregate-data insight once the moat accrues) generate
+      platform-tailored post drafts — X/Twitter thread, LinkedIn post, a
+      value-first Reddit answer template — in the Aegis voice, each with a natural
+      free-audit CTA. Likely an admin tool/endpoint backed by the Claude API over
+      the existing content map (`apps/web/src/lib/marketing.ts GUIDES` + the
+      playbooks).
+- [ ] **Human-in-the-loop + scheduling.** Drafts are reviewed before posting
+      (community rule: value-first, never spam — `AEGIS_GTM_SEO §5, §12`). Optional
+      scheduling/queue and a saved-response library for suspension threads.
+- [ ] **Attribution.** Tag generated posts with UTM/`ref` so social-sourced audits
+      are measurable (ties into §4a attribution and `AEGIS_GTM_SEO §11`).
+
+---
+
 ## 5. Cross-cutting · Security & Multi-tenancy (priority, runs alongside all phases)
 
 > Called out explicitly. Storing other businesses' tokens makes this existential
