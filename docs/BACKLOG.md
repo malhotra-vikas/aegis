@@ -25,6 +25,10 @@ These gate going live; none can be done from the codebase.
 - [ ] **Meta App Review + Business Verification (R1)** — gates *public* Meta OAuth. Your own account works in dev mode now. Critical-path, multi-week — start early.
 - [x] **WorkOS account + keys** — done (auth live).
 - [ ] **WorkOS dashboard: set logout/homepage redirect** to the app URL (fixes the sign-out `app-homepage-url-not-found`).
+- [ ] **WorkOS dashboard: brand the AuthKit hosted page** (the sign-in/sign-up page can only be skinned here, not in our code):
+  - Branding → logo (Aegis mark), primary/brand color **`#2DD4BF`** (teal-400), enable dark appearance (bg **`#020617`**, surface `#0F172A`, text `#FFFFFF` / body `#CBD5E1`).
+  - Domains → custom auth domain `auth.<yourdomain>` so the URL is ours, not `authkit.app` (needs DNS + likely a paid tier).
+  - Our branded `/login` entry already hands off in-brand.
 - [ ] **Search Console + analytics** — verify the domain, submit the sitemap, set up funnel analytics (`AEGIS_GTM_SEO §11`).
 
 ---
@@ -33,7 +37,7 @@ These gate going live; none can be done from the codebase.
 
 Ordered roughly by funnel value.
 
-- [ ] **Anonymous OAuth audit** — the free "full audit" currently requires WorkOS sign-in; the GTM model wants it anonymous, email-gated, account-at-upgrade (`AEGIS_SPEC §13`). Build the anonymous connect → `AuditResult` (keyed to email, no org) path. **Highest funnel-value gap.**
+- [x] **Anonymous OAuth audit** — DONE 2026-06-09. Anonymous, email-gated, point-in-time → `AuditResult` (no org, no stored credential). `/audit/connect` → api `/audit/connect/start|callback` → `/audit/result`. Needs the 2nd Meta redirect URI registered (action above).
 - [ ] **Stripe billing** — checkout for Solo/Agency/Scale, per-account metering, webhooks → `Subscription` state, customer portal. The upgrade path.
 - [ ] **Resend lifecycle email** — audit result → "standing changes overnight" nudge → re-audit drift → upgrade (`AEGIS_GTM_SEO §7`). Re-audit drift is the strongest paid trigger.
 - [ ] **Scale programmatic guides to 30–50** — add entries to `marketing.ts GUIDES` (factory/sitemap pick them up). Plus 5–8 pillar pages (`AEGIS_GTM_SEO §9`).
