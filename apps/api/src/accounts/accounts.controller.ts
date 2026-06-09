@@ -1,5 +1,6 @@
 import { SnapshotReason } from '@aegis/db';
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import type { RawMetaPull, RiskResult } from '@aegis/risk-engine';
+import { Body, Controller, Get, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
 import { AssessmentService } from '../assessment/assessment.service.js';
 import { WorkosAuthGuard } from '../auth/workos-auth.guard.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -73,5 +74,13 @@ export class AccountsController {
   async assess(@CurrentOrg() orgId: string): Promise<{ ok: true }> {
     await this.assessment.assessOrg(orgId, SnapshotReason.MANUAL_AUDIT);
     return { ok: true };
+  }
+
+  // Dev-only: score a hand-crafted pull for an account so the dashboard shows the
+  // full risk range without a real enforcement. Disabled in production.
+  @Post(':id/simulate')
+  async simulate(@CurrentOrg() orgId: string, @Param('id') id: string, @Body() raw: RawMetaPull): Promise<RiskResult> {
+    if (process.env.NODE_ENV === 'production') throw new NotFoundException();
+    return this.assessment.simulate(orgId, id, raw);
   }
 }

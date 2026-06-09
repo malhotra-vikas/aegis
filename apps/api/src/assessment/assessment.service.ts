@@ -72,6 +72,20 @@ export class AssessmentService {
     return result;
   }
 
+  /** Dev/testing: score a hand-crafted pull for an account and persist it, so the
+   *  dashboard shows the full risk range without engineering a real enforcement.
+   *  Verifies the account belongs to the org (RLS scope). */
+  async simulate(orgId: string, accountId: string, raw: RawMetaPull): Promise<RiskResult> {
+    const account = await this.prisma.withOrg(orgId, (tx) =>
+      tx.connectedAccount.findUnique({ where: { id: accountId }, select: { id: true } }),
+    );
+    if (!account) throw new Error(`account ${accountId} not found in org`);
+
+    const result = assessRaw(metaAdapter, raw);
+    await this.persist(orgId, accountId, SnapshotReason.MANUAL_AUDIT, raw, result);
+    return result;
+  }
+
   private async persist(
     orgId: string,
     accountId: string,
