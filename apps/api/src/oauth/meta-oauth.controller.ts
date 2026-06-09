@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, Controller, Get, Query, Req, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
+import { WorkosAuthGuard } from '../auth/workos-auth.guard.js';
 import { CurrentOrg } from '../tenant/current-org.decorator.js';
-import type { TenantRequest } from '../tenant/tenant-context.middleware.js';
+import type { TenantRequest } from '../tenant/tenant-request.js';
 import { MetaOAuthService } from './meta-oauth.service.js';
 
 const STATE_COOKIE = 'meta_oauth_state';
@@ -14,6 +15,7 @@ export class MetaOAuthController {
   // Begin the connect flow. The CSRF state and the initiating org are bound into
   // an httpOnly cookie; the callback verifies both.
   @Get('start')
+  @UseGuards(WorkosAuthGuard)
   start(@CurrentOrg() orgId: string, @Res({ passthrough: true }) res: Response): { authorizationUrl: string } {
     const state = randomBytes(16).toString('hex');
     res.cookie(STATE_COOKIE, `${orgId}:${state}`, {

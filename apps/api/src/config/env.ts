@@ -26,6 +26,19 @@ export function metaConfig(): MetaConfig {
   };
 }
 
+export interface WorkosConfig {
+  jwksUrl: string;
+  issuer?: string;
+}
+
+export function workosConfig(): WorkosConfig {
+  const clientId = required('WORKOS_CLIENT_ID');
+  return {
+    jwksUrl: process.env.WORKOS_JWKS_URL ?? `https://api.workos.com/sso/jwks/${clientId}`,
+    issuer: process.env.WORKOS_ISSUER,
+  };
+}
+
 /**
  * The envelope master key, from the environment (the documented MVP path —
  * AEGIS_OAUTH_SECURITY §5). Production swaps a KMS-backed KeyWrapper in here.

@@ -1,5 +1,5 @@
 import { createParamDecorator, type ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import type { TenantRequest } from './tenant-context.middleware.js';
+import type { TenantRequest } from './tenant-request.js';
 
 /** Injects the resolved tenant orgId, or 401s if the request has no tenant context. */
 export const CurrentOrg = createParamDecorator((_data: unknown, ctx: ExecutionContext): string => {
