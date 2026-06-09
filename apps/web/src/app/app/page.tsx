@@ -1,5 +1,6 @@
 import { signOut, withAuth } from '@workos-inc/authkit-nextjs';
 import { redirect } from 'next/navigation';
+import { type Bucket, RiskScoreCard } from '../../components/risk-score-card';
 
 // The real (non-demo) authenticated risk dashboard. Requires WorkOS env; the
 // demo lives separately under /demo and is unaffected.
@@ -40,16 +41,6 @@ async function refreshRisk() {
   const { accessToken } = await withAuth({ ensureSignedIn: true });
   await api('/accounts/assess', accessToken, { method: 'POST' });
   redirect('/app');
-}
-
-const BUCKET_CLASSES: Record<string, string> = {
-  RED: 'bg-red-100 text-red-800 border-red-300',
-  AMBER: 'bg-amber-100 text-amber-800 border-amber-300',
-  GREEN: 'bg-green-100 text-green-800 border-green-300',
-};
-
-function bucketClasses(bucket: string | null): string {
-  return (bucket && BUCKET_CLASSES[bucket]) ?? 'bg-gray-100 text-gray-600 border-gray-300';
 }
 
 export default async function AppHome({ searchParams }: { searchParams: Promise<{ meta?: string; accounts?: string }> }) {
@@ -109,44 +100,25 @@ export default async function AppHome({ searchParams }: { searchParams: Promise<
         <p className="text-gray-600">No connected accounts yet. Connect a Meta account to see its risk.</p>
       )}
 
-      <div className="space-y-4">
-        {accounts.map((acc) => (
-          <section key={acc.id} className="rounded-lg border border-gray-200 p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-medium">{acc.displayName ?? acc.externalId}</h2>
-                <p className="text-xs text-gray-500">{acc.externalId}</p>
-              </div>
-              <div className={`rounded border px-3 py-1 text-sm font-semibold ${bucketClasses(acc.bucket)}`}>
-                {acc.assessable ? (
-                  <>
-                    {acc.bucket ?? '—'} · {acc.score != null ? Math.round(acc.score) : '—'}
-                  </>
-                ) : (
-                  'Not assessable'
-                )}
-              </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {accounts.map((acc) =>
+          acc.assessable && acc.bucket && acc.score != null ? (
+            <RiskScoreCard
+              key={acc.id}
+              displayName={acc.displayName ?? acc.externalId}
+              externalId={acc.externalId}
+              score={acc.score}
+              bucket={acc.bucket as Bucket}
+              signals={acc.signals.map((s) => ({ severity: s.severity, explanation: s.explanation, contribution: s.contribution }))}
+            />
+          ) : (
+            <div key={acc.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="font-semibold text-gray-900">{acc.displayName ?? acc.externalId}</p>
+              <p className="text-xs text-gray-400">{acc.externalId}</p>
+              <p className="mt-4 text-sm text-gray-500">{acc.lastSnapshotAt ? 'Not assessable — connection or data gap.' : 'Not yet assessed.'}</p>
             </div>
-
-            {acc.signals.length > 0 ? (
-              <ul className="mt-3 space-y-2">
-                {acc.signals.map((s) => (
-                  <li key={s.definitionId} className="rounded bg-gray-50 p-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{s.severity}</span>
-                      <span className="text-gray-500">{Math.round(s.contribution * 100)}%</span>
-                    </div>
-                    <p className="text-gray-700">{s.explanation}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-gray-500">
-                {acc.lastSnapshotAt ? 'No risk signals detected.' : 'Not yet assessed.'}
-              </p>
-            )}
-          </section>
-        ))}
+          ),
+        )}
       </div>
     </main>
   );
