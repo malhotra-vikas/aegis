@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { RiskScoreCard } from '../components/risk-score-card';
 import { SiteFooter, SiteHeader } from '../components/site-chrome';
 import { GUIDES, SITE, TIERS } from '../lib/marketing';
 
@@ -42,20 +43,49 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <SiteHeader />
 
-      <section className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <p className="mb-3 text-sm font-medium text-blue-600">Ad-account survival for Meta advertisers</p>
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{SITE.tagline}</h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600">{SITE.description}</p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Link href="/audit" className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">
-            Run a free audit
-          </Link>
-          <Link href="/pricing" className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-50">
-            See pricing
-          </Link>
+      <section className="bg-gradient-to-b from-blue-50/60 to-white">
+        <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 py-20 md:grid-cols-2">
+          <div>
+            <p className="mb-3 text-sm font-medium text-blue-600">Ad-account survival for Meta advertisers</p>
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{SITE.tagline}</h1>
+            <p className="mt-5 text-lg text-gray-600">{SITE.description}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/audit" className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-blue-700">
+                Run a free audit
+              </Link>
+              <Link href="/pricing" className="rounded-lg border border-gray-300 px-6 py-3 font-medium transition hover:bg-gray-50">
+                See pricing
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-gray-500">Free &amp; point-in-time · no card required.</p>
+          </div>
+
+          {/* Show the product, not just tell. A representative verdict card. */}
+          <div className="md:justify-self-end">
+            <RiskScoreCard
+              displayName="Acme — Prospecting"
+              externalId="act_1009482…"
+              score={42}
+              bucket="AMBER"
+              signals={[
+                { severity: 'Warning', explanation: 'A payment was declined — delivery is paused.' },
+                { severity: 'Warning', explanation: '2 active ads are disapproved.' },
+                { severity: 'Info', explanation: 'Business verification is incomplete.' },
+              ]}
+            />
+            <p className="mt-2 text-center text-xs text-gray-400">A real verdict, explained — with the fix for each flag.</p>
+          </div>
         </div>
-        <p className="mt-4 text-sm text-gray-500">Point-in-time, no card required. We never request write access to your ads.</p>
       </section>
+
+      <div className="border-y border-gray-100 bg-white">
+        <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 py-4 text-sm text-gray-600">
+          <span>🔒 Strictly read-only</span>
+          <span>🚫 We never touch your ads</span>
+          <span>⚡ Verdict in under a minute</span>
+          <span>📋 Compliance-first, not adversarial</span>
+        </div>
+      </div>
 
       <section className="border-y border-gray-100 bg-gray-50">
         <div className="mx-auto max-w-3xl px-4 py-14">

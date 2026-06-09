@@ -38,7 +38,9 @@ export default function Pricing() {
           {TIERS.map((t) => (
             <div
               key={t.name}
-              className={`flex flex-col rounded-xl border p-5 ${t.highlight ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'}`}
+              className={`flex flex-col rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md ${
+                t.highlight ? 'border-blue-500 ring-1 ring-blue-500 md:-translate-y-2' : 'border-gray-200'
+              }`}
             >
               {t.highlight && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">Most popular</p>}
               <h2 className="text-lg font-semibold">{t.name}</h2>
