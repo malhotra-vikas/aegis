@@ -63,6 +63,10 @@ GRANT USAGE ON SCHEMA public TO aegis_app;
 GRANT SELECT, INSERT, UPDATE ON "Organization" TO aegis_app;
 GRANT SELECT, INSERT, UPDATE ON "User" TO aegis_app;
 
+-- AuditResult is the free-tier, pre-signup lead capture (keyed to email, no org),
+-- so it isn't tenant-scoped. The anonymous audit endpoint inserts here.
+GRANT SELECT, INSERT, UPDATE ON "AuditResult" TO aegis_app;
+
 -- =====================================================================
 -- 2. HealthSnapshot partitioning (AEGIS_DATA_MODEL.md §4.1) — NOT YET APPLIED
 -- =====================================================================

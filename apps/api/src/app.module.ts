@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AccountsController } from './accounts/accounts.controller.js';
 import { AssessmentService } from './assessment/assessment.service.js';
+import { AuditController } from './audit/audit.controller.js';
 import { IdentityService } from './auth/identity.service.js';
 import { WorkosAuthGuard } from './auth/workos-auth.guard.js';
 import { WorkosAuthService } from './auth/workos-auth.service.js';
@@ -12,7 +13,7 @@ import { MetaOAuthService } from './oauth/meta-oauth.service.js';
 import { PrismaService } from './prisma/prisma.service.js';
 
 @Module({
-  controllers: [HealthController, MeController, MetaOAuthController, AccountsController],
+  controllers: [HealthController, MeController, MetaOAuthController, AccountsController, AuditController],
   providers: [
     PrismaService,
     WorkosAuthService,
