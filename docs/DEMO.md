@@ -18,10 +18,10 @@ pnpm install
 pnpm --filter @aegis/db migrate                               # apply migrations (first run only)
 pnpm --filter @aegis/db seed                                  # load demo data
 pnpm --filter @aegis/risk-engine --filter @aegis/db build     # web imports their built dist
-pnpm --filter web dev                                         # http://localhost:3000
+pnpm --filter web dev                                         # http://localhost:3000/demo
 ```
 
-Open http://localhost:3000 — you land on the persona switcher.
+Open http://localhost:3000/demo — you land on the persona switcher. (`/` redirects there.)
 
 ## Personas (click to log in, no password)
 

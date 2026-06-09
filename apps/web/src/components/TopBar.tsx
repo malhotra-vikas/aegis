@@ -11,9 +11,12 @@ export async function TopBar() {
   return (
     <header className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-gray-900">
+        <Link href="/demo" className="flex items-center gap-2 font-semibold text-gray-900">
           <span className="inline-block h-5 w-5 rounded bg-gray-900" aria-hidden />
           Aegis
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+            demo
+          </span>
         </Link>
 
         {user ? (
@@ -24,7 +27,7 @@ export async function TopBar() {
             >
               {user.platformRole}
             </span>
-            <Link href="/login" className="text-gray-500 hover:text-gray-900">
+            <Link href="/demo" className="text-gray-500 hover:text-gray-900">
               Switch persona
             </Link>
             <form action={logout}>
@@ -34,7 +37,7 @@ export async function TopBar() {
             </form>
           </div>
         ) : (
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900">
+          <Link href="/demo" className="text-sm text-gray-500 hover:text-gray-900">
             Sign in
           </Link>
         )}

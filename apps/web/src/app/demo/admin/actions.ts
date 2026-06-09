@@ -34,7 +34,7 @@ export async function addLead(formData: FormData) {
     },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/demo/admin");
 }
 
 /** Convert a lead into a real customer tenant the customer can log into. */
@@ -65,5 +65,5 @@ export async function convertLead(formData: FormData) {
     data: { status: LeadStatus.CONVERTED, organizationId: org.id },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/demo/admin");
 }

@@ -26,10 +26,10 @@ export async function getCurrentUser() {
   });
 }
 
-/** Redirect to /login when there is no session. */
+/** Redirect to the persona switcher when there is no session. */
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/demo");
   return user;
 }
 
@@ -44,10 +44,10 @@ export async function requireRole(role: PlatformRole) {
 export function homePathFor(role: PlatformRole): string {
   switch (role) {
     case PlatformRole.ADMIN:
-      return "/admin";
+      return "/demo/admin";
     case PlatformRole.SALES:
-      return "/sales";
+      return "/demo/sales";
     case PlatformRole.CUSTOMER:
-      return "/app";
+      return "/demo/app";
   }
 }
