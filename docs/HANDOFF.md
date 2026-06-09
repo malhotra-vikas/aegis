@@ -38,6 +38,14 @@ Real backend foundation underway (`/demo` stays as the mock, untouched):
 5. **CI** — `.github/workflows/ci.yml`: Postgres service → migrate → lint/typecheck/
    test (incl. the RLS gate) → build; gitleaks secret-scan. ESLint wired across all
    packages (root flat config for the pure libs).
+6. **WorkOS auth (slice 5)** — api verifies WorkOS access tokens via JWKS
+   (`WorkosAuthService`), provisions Org/User/Membership on first sign-in
+   (`IdentityService`), and a `WorkosAuthGuard` sets `req.orgId`. `/me` echoes the
+   tenant context. Local-dev bypass via `AEGIS_DEV_ORG_ID`. Schema gained
+   `workosOrgId`/`workosUserId` (+ migration). Web: AuthKit `proxy.ts` (Next 16
+   renamed middleware→proxy; gated on WorkOS env so `/demo` is untouched),
+   `/callback`, and an authed `/app` page that calls the api `/me`. See
+   `.env.example` in `apps/api` and `apps/web` for the vars to set.
 
 **All `@aegis/*` libs + the api are now ESM** (Prisma 7 forces it). The api connects
 as `aegis_app` (no BYPASSRLS) in prod via `APP_DATABASE_URL`; locally it falls back
@@ -108,9 +116,10 @@ the open decision sits:
 2. **OAuth controller** — `/oauth/meta/start` + `/callback` wiring the connector
    exchange → credential storage. Needs a **Meta dev app (App ID/Secret)** to test
    live; mock-testable meanwhile. Public OAuth is gated by R1 (Meta App Review).
-3. **Real auth + sessions** — replace the demo persona cookie with real sign-in
-   (Org/User/Membership). **Open human decision: session/auth strategy and how it
-   coexists with `/demo`.**
+3. **Real auth + sessions** — DONE (WorkOS, slice 5 above). Remaining: a live
+   end-to-end test once the WorkOS account + keys exist (set `apps/web/.env.example`
+   + `apps/api/.env.example` vars), and pointing `APP_DATABASE_URL` at the
+   `aegis_app` login role so RLS is enforced (not just bypassed by the owner).
 
 ## Resolved decisions
 
