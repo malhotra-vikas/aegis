@@ -6,8 +6,20 @@ const DEFAULT_GRAPH_BASE = 'https://graph.facebook.com';
 const DEFAULT_DIALOG_BASE = 'https://www.facebook.com';
 
 // Least-privilege, read-only allowlist (locked decision: never request ads_management
-// or any write scope). Anything outside this set is refused before we ever redirect.
+// or any write scope). We only ever REQUEST scopes in this set.
 const ALLOWED_SCOPES = new Set(['ads_read', 'business_management', 'pages_read_engagement', 'pages_show_list', 'read_insights']);
+
+// Write scopes we must never hold. Meta auto-grants benign reads (e.g.
+// public_profile) we don't request, so granted-scope checks use this denylist
+// rather than the request allowlist — only an actual write scope is a problem.
+const FORBIDDEN_SCOPES = new Set([
+  'ads_management',
+  'pages_manage_ads',
+  'pages_manage_posts',
+  'pages_manage_metadata',
+  'pages_manage_engagement',
+  'catalog_management',
+]);
 
 export class MetaOAuthError extends Error {
   constructor(message: string) {
@@ -92,7 +104,7 @@ export async function inspectToken(cfg: MetaOAuthConfig, opts: { token: string }
     data?: { scopes?: string[]; is_valid?: boolean; expires_at?: number; data_access_expires_at?: number };
   };
   const data = body.data ?? {};
-  assertAllowedScopes(data.scopes ?? []);
+  assertNoForbiddenScopes(data.scopes ?? []);
   return {
     scopes: data.scopes ?? [],
     isValid: data.is_valid ?? false,
@@ -101,10 +113,20 @@ export async function inspectToken(cfg: MetaOAuthConfig, opts: { token: string }
   };
 }
 
+// Request-time: we only ever ASK for read scopes in the allowlist.
 function assertAllowedScopes(scopes: string[]): void {
   const forbidden = scopes.filter((s) => !ALLOWED_SCOPES.has(s));
   if (forbidden.length > 0) {
-    throw new MetaOAuthError(`refusing scope(s) outside the read-only allowlist: ${forbidden.join(', ')}`);
+    throw new MetaOAuthError(`refusing to request scope(s) outside the read-only allowlist: ${forbidden.join(', ')}`);
+  }
+}
+
+// Grant-time: tolerate benign reads Meta adds (public_profile, email), reject any
+// actual write scope.
+function assertNoForbiddenScopes(scopes: string[]): void {
+  const held = scopes.filter((s) => FORBIDDEN_SCOPES.has(s));
+  if (held.length > 0) {
+    throw new MetaOAuthError(`refusing forbidden write scope(s): ${held.join(', ')}`);
   }
 }
 

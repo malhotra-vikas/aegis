@@ -74,4 +74,15 @@ describe('inspectToken', () => {
     const res = await inspectToken({ ...cfg, fetchImpl }, { token: 'tok' });
     expect(res.expiresAt).toBeNull();
   });
+
+  it('tolerates benign auto-granted scopes like public_profile', async () => {
+    const fetchImpl = ok({ data: { scopes: ['ads_read', 'public_profile'], is_valid: true } });
+    const res = await inspectToken({ ...cfg, fetchImpl }, { token: 'tok' });
+    expect(res.scopes).toContain('public_profile');
+  });
+
+  it('rejects a granted write scope (ads_management)', async () => {
+    const fetchImpl = ok({ data: { scopes: ['ads_read', 'ads_management'], is_valid: true } });
+    await expect(inspectToken({ ...cfg, fetchImpl }, { token: 'tok' })).rejects.toThrow(MetaOAuthError);
+  });
 });
