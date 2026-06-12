@@ -6,6 +6,14 @@
 > Full phased plan: `ROADMAP.md`. Demo guide: `DEMO.md`. Rules + locked decisions:
 > `../CLAUDE.md`. Auth design: `design/AUTH.md`.
 
+## ▶ Resume protocol (do this first, in order)
+
+1. **Bring the app up and confirm it runs** — env-resume steps below, then:
+   - quickest real-product bring-up (two terminals): `pnpm --filter api dev` (:3001) + `pnpm --filter web dev` (:3000), or both at once with `pnpm dev` (turbo).
+   - smoke-test: `curl localhost:3001/health` → `{"status":"ok"}`, open `localhost:3000` (landing) and `localhost:3000/demo` (mock).
+   - whole suite green: `pnpm lint && pnpm typecheck && pnpm test` (Postgres up + `DATABASE_URL` set).
+2. **Only once it's up**, review the open items in `BACKLOG.md` / `ROADMAP.md` and pick the next one to build (see "What's next" below).
+
 ## Where we are
 
 A real product loop runs locally end-to-end, plus the original `/demo` mock (still
