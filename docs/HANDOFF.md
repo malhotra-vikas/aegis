@@ -1,136 +1,79 @@
 # Session handoff — resume here
 
-> Snapshot of working state as of **2026-06-08**, written so a fresh session
-> can continue without losing a beat. Long-term plan: `ROADMAP.md`. Demo guide:
-> `DEMO.md`. How-to-work + locked decisions: `../CLAUDE.md`.
-> **Open todos + your action items: `BACKLOG.md`** (the durable tracker).
+> Working-state snapshot as of **2026-06-12**, written so a fresh session (or a
+> post-restart you) continues without missing a beat.
+> **Open todos + your action items: `BACKLOG.md`** (the durable tracker — read it).
+> Full phased plan: `ROADMAP.md`. Demo guide: `DEMO.md`. Rules + locked decisions:
+> `../CLAUDE.md`. Auth design: `design/AUTH.md`.
 
 ## Where we are
 
-Three things are built and verified:
+A real product loop runs locally end-to-end, plus the original `/demo` mock (still
+intact, separate). All committed on `main` (~35 commits). Whole monorepo green
+(`pnpm lint && pnpm typecheck && pnpm test`).
 
-1. **`packages/risk-engine`** — Meta v1 risk engine (pure/deterministic scoring,
-   13-signal catalog), 23 tests green.
-2. **`packages/db`** — full Prisma 7 schema (spec entities + sales CRM), migration
-   applied, ESM client wired (pg driver adapter), idempotent seed.
-3. **`apps/web` `/demo`** — runnable local demo: persona auth (Admin/Sales/Customer),
-   sales CRM + revenue, **lead→customer conversion**, and a customer risk dashboard
-   rendering the **real engine** over seeded data. Both GTM motions (sales-led +
-   self-serve) represented.
+**Built + verified (live, not mocked):**
+- **`@aegis/shared`** — envelope encryption (AES-256-GCM, `KeyWrapper` seam: local MVP now, KMS later).
+- **`@aegis/connectors`** — rate-limit-aware Meta Graph client, OAuth exchange/inspect, ad-account pull (status + live disapproved-ad count).
+- **`@aegis/risk-engine`** — Meta v1 scoring (13 signals, noisy-OR + terminal + fail-closed). 23 tests.
+- **`packages/db`** — Prisma 7 schema, **cross-tenant RLS enforced** (`aegis_app` role, no BYPASSRLS), replay harness (`pnpm --filter @aegis/db replay`).
+- **`apps/api`** (ESM NestJS, :3001) — WorkOS auth (JWKS verify + Org/User/Membership provisioning), tenant scoping via `withOrg`, Meta connect → **encrypted `Credential`**, risk **assessment** (pull→engine→snapshot), **anonymous free audit**, **Stripe billing** (checkout/portal/webhook), `/health`, `/me`.
+- **`apps/web`** (Next 16, :3000) — dark+teal marketing site (landing, pricing, guides factory from the taxonomy, sitemap/robots/JSON-LD), branded `/login` → WorkOS, two-step **free audit** (`/audit` → `/audit/connect` → `/audit/result`), real **risk dashboard** `/app` (RiskScoreCard + plan/upgrade/manage), Aegis shield logo. Plus the **`/demo`** persona mock (untouched).
 
-Full status with `[x]/[~]/[ ]` markers is in `ROADMAP.md §0`.
+**Live flows confirmed this session:** WorkOS sign-in → `/app`; Meta connect → 2 real ad accounts pulled + scored + encrypted credentials stored; RLS isolates the dashboard to the caller's org; anonymous audit start 302s to Meta.
 
-## Phase 0 progress (added 2026-06-09)
-
-Real backend foundation underway (`/demo` stays as the mock, untouched):
-
-1. **`@aegis/shared`** — envelope encryption (AES-256-GCM, per-record data key,
-   `KeyWrapper` seam for KMS-vs-local, key rotation). 11 tests.
-2. **`@aegis/connectors`** — rate-limit-aware Meta Graph client (`appsecret_proof`,
-   `X-Business-Use-Case-Usage`, backoff+jitter, egress allowlist), ad-account pull
-   → `RawMetaPull`, and OAuth exchange/inspect helpers with a read-only scope
-   allowlist. 24 tests.
-3. **`@aegis/db`** — **cross-tenant RLS isolation gate** (policies + `WITH CHECK`,
-   least-privilege `aegis_app` role, append-only `AuditLog`). 6 tests. Apply RLS
-   with `pnpm --filter @aegis/db rls`.
-4. **`apps/api`** — converted to **ESM NestJS** (tsc + vitest, dropped nest-cli/jest).
-   `PrismaService.withOrg` sets the per-request RLS GUC inside a transaction;
-   tenant middleware; global error filter; `/health`. Boots + serves on :3001.
-5. **CI** — `.github/workflows/ci.yml`: Postgres service → migrate → lint/typecheck/
-   test (incl. the RLS gate) → build; gitleaks secret-scan. ESLint wired across all
-   packages (root flat config for the pure libs).
-6. **WorkOS auth (slice 5)** — api verifies WorkOS access tokens via JWKS
-   (`WorkosAuthService`), provisions Org/User/Membership on first sign-in
-   (`IdentityService`), and a `WorkosAuthGuard` sets `req.orgId`. `/me` echoes the
-   tenant context. Local-dev bypass via `AEGIS_DEV_ORG_ID`. Schema gained
-   `workosOrgId`/`workosUserId` (+ migration). Web: AuthKit `proxy.ts` (Next 16
-   renamed middleware→proxy; gated on WorkOS env so `/demo` is untouched),
-   `/callback`, and an authed `/app` page that calls the api `/me`. See
-   `.env.example` in `apps/api` and `apps/web` for the vars to set.
-
-**All `@aegis/*` libs + the api are now ESM** (Prisma 7 forces it). The api connects
-as `aegis_app` (no BYPASSRLS) in prod via `APP_DATABASE_URL`; locally it falls back
-to `DATABASE_URL` (the owner, which bypasses RLS — so the demo is unaffected).
-
-Run the whole suite: `pnpm lint && pnpm typecheck && pnpm test` (needs `DATABASE_URL`
-set + Postgres up for the RLS gate).
-
-## Resume the environment tomorrow (ordered)
+## Resume the environment (ordered)
 
 ```bash
-# 0. Start Docker Desktop (GUI), then:
+# 0. Start Docker Desktop, then:
 cd /Volumes/SSD/builderspace/aegis
-docker compose up -d            # Postgres + Redis return WITH data (named volume persists)
-pnpm install                    # link workspace (usually a no-op)
+docker compose up -d        # Postgres + Redis return WITH data (named volumes persist)
+pnpm install                # link workspace (usually a no-op)
 
-# Rebuild the libs web consumes (their dist + Prisma client are gitignored;
-# they persist on disk across a restart, but rebuilding is the safe move):
-pnpm --filter @aegis/risk-engine --filter @aegis/db build
+# Rebuild the libs that apps consume (dist + generated Prisma client are gitignored;
+# they persist on disk but rebuilding is the safe move):
+pnpm --filter @aegis/risk-engine --filter @aegis/shared --filter @aegis/connectors --filter @aegis/db build
 
-# Optional — only if you want a fresh, predictable demo dataset:
-pnpm --filter @aegis/db seed
-
-pnpm --filter web dev           # → http://localhost:3000/demo
+# Sanity: whole suite green (needs Postgres up + DATABASE_URL):
+export DATABASE_URL=$(grep -o 'DATABASE_URL=.*' packages/db/.env | cut -d= -f2-)
+pnpm lint && pnpm typecheck && pnpm test
 ```
 
-Sanity checks: `pnpm --filter @aegis/risk-engine test` (23 pass), then open
-`localhost:3000/demo`.
+## Running the apps
 
-## Demo personas (click to log in, no password)
+- **Demo mock:** `pnpm --filter web dev` → http://localhost:3000/demo (personas below; no real auth/env needed).
+- **Real product:** two terminals —
+  - api: `pnpm --filter api dev`  (builds + runs :3001; loads `apps/api/.env` via `node --env-file-if-exists`)
+  - web: `pnpm --filter web dev`  (:3000)
+  - then http://localhost:3000 (landing) / `/login` (WorkOS) / `/app` (dashboard) / `/audit` (free audit).
+
+**Env (gitignored, persist on disk across restart):** `apps/api/.env` (DB, `AEGIS_MASTER_KEY`, WorkOS `WORKOS_CLIENT_ID`, Meta `META_*`, `APP_DATABASE_URL`=aegis_app, Stripe `STRIPE_*` when set), `apps/web/.env.local` (WorkOS keys, `API_BASE_URL`, DB), `packages/db/.env` (DB). Templates: each app's `.env.example`.
+
+## Demo personas (the `/demo` mock — click to log in, no password)
 
 | Login | Role | Lands on |
 |-------|------|----------|
-| `admin@aegis.dev` | Admin | `/demo/admin` — leads, revenue, convert lead |
-| `dana@aegis.dev`, `marco@aegis.dev` | Sales | `/demo/sales` — own pipeline |
-| `acme@customer.com`, `ops@northbeam.com`, `hi@lumengrowth.com`, `founder@soloco.com` | Customer | `/demo/app` — risk dashboard |
+| `admin@aegis.dev` | Admin | `/demo/admin` |
+| `dana@aegis.dev`, `marco@aegis.dev` | Sales | `/demo/sales` |
+| `acme@customer.com`, `ops@northbeam.com`, `hi@lumengrowth.com`, `founder@soloco.com` | Customer | `/demo/app` |
 
-## Verified working (don't re-litigate)
+## What's next / where we left off
 
-- All three persona views render with real data; role guards correct.
-- Lead→customer conversion provisions a real tenant + engine snapshot; the new
-  customer can log in immediately. (Tested over HTTP via the server action.)
-- Engine scores match the spec (worked example 39.73 amber; terminal overrides).
+All near-term todos + your external actions are in **`BACKLOG.md`**. Last open
+decision: **which to build next** — options on the table were **Resend lifecycle
+email** (closes funnel→revenue, pairs with the just-shipped Stripe billing),
+**Workers/BullMQ continuous monitoring** (what paid tiers actually promise), or the
+**Cal.com demo CTA** (smallest funnel win). Newly added to `ROADMAP §4a–4b` (not yet
+built): sales-rep attribution (`?ref`), demo CTA, lead→Slack claim flow, social
+content engine.
 
-## Gotchas / non-obvious (will bite again if forgotten)
+## Local infra / gotchas (will bite if forgotten)
 
-- **Prisma 7 is ESM.** `@aegis/db` and `@aegis/risk-engine` must keep
-  `"type": "module"`. The generated client uses `import`/`fileURLToPath`; CJS
-  output fails at runtime.
-- **`tsconfig.base.json` needs `"declaration": true`** or the libs emit no
-  `.d.ts` and resolve as `any` everywhere they're imported. (Was dropped once;
-  caused a flood of phantom type errors in web.)
-- **Re-seeding regenerates all cuid IDs.** Stale session cookies / hardcoded IDs
-  break after a reseed — re-fetch IDs from the DB.
-- **After moving App Router routes, `rm -rf apps/web/.next`** — stale generated
-  route types (`.next/dev/types`) reference old paths and fail typecheck.
-- Web reads `DATABASE_URL` from `apps/web/.env.local`; `packages/db` from
-  `packages/db/.env`. Both gitignored.
-
-## Immediate next steps (slice 4 — partially done)
-
-The Meta-OAuth *connector* helpers exist (exchange/inspect). Remaining, and where
-the open decision sits:
-
-1. **api credential-storage service** — seal a `TokenBundle` (shared envelope) and
-   persist an encrypted `Credential` via `PrismaService.withOrg`. Unblocked; needs
-   a master-key env (`LocalKeyWrapper` MVP path) + the OAuth controller.
-2. **OAuth controller** — `/oauth/meta/start` + `/callback` wiring the connector
-   exchange → credential storage. Needs a **Meta dev app (App ID/Secret)** to test
-   live; mock-testable meanwhile. Public OAuth is gated by R1 (Meta App Review).
-3. **Real auth + sessions** — DONE (WorkOS, slice 5 above). Remaining: a live
-   end-to-end test once the WorkOS account + keys exist (set `apps/web/.env.example`
-   + `apps/api/.env.example` vars), and pointing `APP_DATABASE_URL` at the
-   `aegis_app` login role so RLS is enforced (not just bypassed by the owner).
-
-## Resolved decisions
-
-- **web ↔ api data boundary** — decided 2026-06-09: web tier holds no Prisma; all
-  tenant data flows through the NestJS api (sets the RLS GUC). `/demo` exempt.
-  Now in `CLAUDE.md` locked decisions.
-
-## In-session task list (all completed this session)
-
-risk-engine (types/scoring, Meta catalog, tests) · db schema + migration · seed
-with real engine · web↔db/engine wiring + dev auth · admin/sales/customer pages ·
-local end-to-end verify · relocate demo to `/demo` · write `ROADMAP.md`. No open
-in-session tasks; the forward work lives in `ROADMAP.md`.
+- **DB user is `aegis`/`aegis`, NOT `postgres`** (docker compose). Container `aegis-postgres-1`. psql: `docker exec aegis-postgres-1 psql -U aegis -d aegis`.
+- **RLS enforced via `aegis_app`** (local password `aegis_app_local`, `NOLOGIN` by default — `ALTER ROLE aegis_app WITH LOGIN PASSWORD …` if recreated). The api uses it via `APP_DATABASE_URL`; the owner connection bypasses RLS (so `/demo` is unaffected). Re-apply policies: `pnpm --filter @aegis/db rls`.
+- **All `@aegis/*` libs + the api are ESM** (Prisma 7 forces `"type":"module"`). The api builds with `tsc` (not nest-cli) so decorator metadata is emitted; `tsx`/esbuild would break Nest DI.
+- **`apps/api/.env` is loaded by the run scripts** via `node --env-file-if-exists=.env` — NestJS does not auto-load it.
+- **Two Meta redirect URIs** must be registered in the Meta app: `…/oauth/meta/callback` (authed connect) and `…/audit/connect/callback` (anonymous audit).
+- **WorkOS AuthKit page** is branded in the WorkOS dashboard (not our code) — teal `#2DD4BF`, dark, logo (`apps/web/public/logo.svg`); set a logout/homepage redirect.
+- **Stripe** code is built but dormant until `STRIPE_*` env is set (see `BACKLOG §A`); test webhooks with the Stripe CLI → `localhost:3001/billing/webhook`.
+- `tsconfig.base.json` needs `"declaration": true` (else libs emit no `.d.ts` → `any` everywhere). After moving App Router routes, `rm -rf apps/web/.next`. Re-seeding regenerates cuid IDs.

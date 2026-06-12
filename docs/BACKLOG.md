@@ -5,7 +5,7 @@
 > Update the checkboxes as things land. Long-term phased plan: `ROADMAP.md`. Current
 > state + resume: `HANDOFF.md`.
 
-_Last updated: 2026-06-09._
+_Last updated: 2026-06-12._
 
 ---
 
